@@ -1,5 +1,6 @@
 import React from 'react';
 import eventBus from 'shared/eventBus';
+import { EVENTS } from 'shared/events';
 import PRODUCTS from 'shared/products';
 import './ProductGrid.css';
 
@@ -20,7 +21,10 @@ function ProductCard({ product, onAdd }) {
 
 function ProductGrid() {
   const handleAdd = (product) => {
-    // TODO: notifier le reste de l'application qu'un produit a ete ajoute
+    eventBus.emit(EVENTS.CART_ITEM_ADDED, {
+      product,
+      source: 'catalog',
+    });
   };
 
   return (

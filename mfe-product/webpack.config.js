@@ -5,6 +5,9 @@ const { ModuleFederationPlugin } = require('webpack').container;
 module.exports = {
   entry: './src/index.js',
   mode: 'development',
+  output: {
+    publicPath: 'auto',
+  },
   devServer: {
     port: 3001,
     historyApiFallback: true,
@@ -36,7 +39,15 @@ module.exports = {
   },
   plugins: [
     new ModuleFederationPlugin({
-      // TODO: configurer ce MFE pour exposer le composant ProductGrid
+      name: 'mfe_product',
+      filename: 'remoteEntry.js',
+      exposes: {
+        './ProductGrid': './src/components/ProductGrid',
+      },
+      shared: {
+        react: { singleton: true, requiredVersion: '^18.2.0' },
+        'react-dom': { singleton: true, requiredVersion: '^18.2.0' },
+      },
     }),
     new HtmlWebpackPlugin({
       template: './public/index.html',

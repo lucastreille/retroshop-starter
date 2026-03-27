@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import eventBus from 'shared/eventBus';
+import { EVENTS } from 'shared/events';
 import './Cart.css';
+
+let nextCartItemId = 1;
 
 function Cart() {
   const [items, setItems] = useState([]);
@@ -8,11 +11,25 @@ function Cart() {
   const total = items.reduce((sum, item) => sum + item.price, 0);
 
   useEffect(() => {
-    // TODO: ecouter les ajouts de produits et mettre a jour le state
+    const unsubscribe = eventBus.on(EVENTS.CART_ITEM_ADDED, ({ product }) => {
+      setItems(prev => [
+        ...prev,
+        {
+          ...product,
+          cartId: `cart-item-${nextCartItemId++}`,
+        },
+      ]);
+    });
+
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
-    // TODO: notifier le reste de l'application quand le panier change
+    eventBus.emit(EVENTS.CART_UPDATED, {
+      items,
+      count: items.length,
+      total,
+    });
   }, [items]);
 
   const handleRemove = (cartId) => {
