@@ -11,6 +11,9 @@ module.exports = {
   devServer: {
     port: 3003,
     historyApiFallback: true,
+    client: {
+      overlay: false,
+    },
     headers: { 'Access-Control-Allow-Origin': '*' },
   },
   resolve: {

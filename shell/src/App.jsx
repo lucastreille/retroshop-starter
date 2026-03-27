@@ -1,20 +1,62 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect } from 'react';
 import eventBus from 'shared/eventBus';
 import { EVENTS } from 'shared/events';
 import './App.css';
 
-const ProductGrid = lazy(() => import('mfe_product/ProductGrid'));
-const Cart = lazy(() => import('mfe_cart/Cart'));
-const Recommendations = lazy(() =>
-  import('mfe_reco/Recommendations').catch(() => ({
-    default: function RecommendationsUnavailable() {
-      return <div className="loading-fallback">Recommandations indisponibles</div>;
-    },
-  }))
-);
+const loadProductGrid = () => import('mfe_product/ProductGrid');
+const loadCart = () => import('mfe_cart/Cart');
+const loadRecommendations = () => import('mfe_reco/Recommendations');
 
 function LoadingFallback({ name }) {
   return <div className="loading-fallback">Chargement {name}...</div>;
+}
+
+function OfflineFallback({ name }) {
+  return <div className="loading-fallback">{name} indisponible</div>;
+}
+
+function RemoteMFE({ name, importFn }) {
+  const [Component, setComponent] = useState(null);
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    setComponent(null);
+    setError(false);
+    setLoading(true);
+
+    importFn()
+      .then((mod) => {
+        if (cancelled) return;
+
+        setComponent(() => mod.default);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.warn(`[MFE] ${name} indisponible:`, err.message);
+
+        if (cancelled) return;
+
+        setError(true);
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [name, importFn]);
+
+  if (loading) {
+    return <LoadingFallback name={name} />;
+  }
+
+  if (error || !Component) {
+    return <OfflineFallback name={name} />;
+  }
+
+  return <Component />;
 }
 
 function App() {
@@ -36,20 +78,14 @@ function App() {
       </header>
       <main className="shell-main">
         <section className="product-area">
-          <Suspense fallback={<LoadingFallback name="catalogue" />}>
-            <ProductGrid />
-          </Suspense>
+          <RemoteMFE name="catalogue" importFn={loadProductGrid} />
         </section>
         <aside className="cart-area">
-          <Suspense fallback={<LoadingFallback name="panier" />}>
-            <Cart />
-          </Suspense>
+          <RemoteMFE name="panier" importFn={loadCart} />
         </aside>
       </main>
       <section className="reco-area">
-        <Suspense fallback={<LoadingFallback name="recommandations" />}>
-          <Recommendations />
-        </Suspense>
+        <RemoteMFE name="recommandations" importFn={loadRecommendations} />
       </section>
     </div>
   );
